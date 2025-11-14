@@ -32,12 +32,14 @@ rule read_token =
   | "-" { MINUS }
   | "*" { MUL }  
   | "==" { EQ }
+  | "!=" { NEQ }
   | "<=" { LEQ }  
   | "<" { LE }
   | ">=" { GEQ }  
   | ">" { GE }
   | "?" { RECEIVESEP }
-  | ".transfer" { TRANSFER }
+  | "." { FIELDSEP }
+  | "transfer" { TRANSFER }
   | ":" { TOKSEP }
   | "contract" { CONTRACT }
   | "skip" { SKIP }

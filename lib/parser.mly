@@ -11,6 +11,7 @@ open Ast
 %token MINUS
 %token MUL
 %token EQ
+%token NEQ
 %token LEQ
 %token LE
 %token GEQ
@@ -39,6 +40,7 @@ open Ast
 %token BOOL
 %token ADDR
 %token RECEIVESEP
+%token FIELDSEP
 %token TRANSFER
 %token TOKSEP
 %token ARGSEP
@@ -56,6 +58,7 @@ open Ast
 %nonassoc ELSE DO
 
 %start <contract> contract
+%start <transaction> transaction
 %type <var_decl> var_decl
 %type <modifier> modifier
 %type <fun_decl> fun_decl
@@ -71,6 +74,10 @@ contract:
   | CONTRACT; c=ID; LBRACE; vdl = list(var_decl); fdl = list(fun_decl); RBRACE; EOF { Contract(c,vdl,fdl) }
 ;
 
+transaction:
+  | sender = ID; TOKSEP; contr = ID; FIELDSEP; f = ID; LPAREN; a = args; RPAREN { Tx(sender,contr,f,a) } 
+;
+
 expr:
   | n = CONST { IntConst(int_of_string n) }
   | s = STRING { AddrConst(s) }
@@ -83,6 +90,7 @@ expr:
   | e1=expr; MINUS; e2=expr { Sub(e1,e2) }
   | e1=expr; MUL; e2=expr { Mul(e1,e2) }
   | e1=expr; EQ; e2=expr { Eq(e1,e2) }
+  | e1=expr; NEQ; e2=expr { Neq(e1,e2) }
   | e1=expr; LEQ; e2=expr { Leq(e1,e2) }
   | e1=expr; LE; e2=expr { Le(e1,e2) }
   | e1=expr; GEQ; e2=expr { Geq(e1,e2) }
@@ -95,7 +103,7 @@ nonseq_cmd:
   | SKIP; CMDSEP;  { Skip }
   | REQ; e = expr; CMDSEP; { Req(e) } 
   | x = ID; TAKES; e = expr; CMDSEP; { Assign(x,e) }
-  | x = ID; TRANSFER; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Send(x,e,t) }
+  | x = ID; FIELDSEP; TRANSFER; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Send(x,e,t) }
   | f = ID; LPAREN; e=expr; RPAREN; CMDSEP; { Call(f,e) }
 
 cmd:

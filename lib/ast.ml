@@ -22,6 +22,7 @@ type expr =
   | Sub of expr * expr
   | Mul of expr * expr
   | Eq of expr * expr
+  | Neq of expr * expr
   | Leq of expr * expr
   | Le of expr * expr           
   | Geq of expr * expr
@@ -66,6 +67,5 @@ and fun_decls = fun_decl list
 
 type contract = Contract of ide * var_decls * fun_decls
 
-
 (* tx = sender:contract.function(args) *)
-type tx = Tx of addr * ide * ide * args
+type transaction = Tx of addr * ide * ide * args

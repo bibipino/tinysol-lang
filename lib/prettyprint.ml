@@ -21,7 +21,7 @@ let rec string_of_expr = function
   | False -> "false"
   | Var x -> x
   | IntConst n -> string_of_int n
-  | AddrConst s -> "\"" ^ s ^ "\""
+  | AddrConst a -> "\"" ^ a ^ "\""
   | Not e -> "!" ^ string_of_expr e
   | And(e1,e2) -> string_of_expr e1 ^ " && " ^ string_of_expr e2
   | Or(e1,e2) -> string_of_expr e1 ^ " || " ^ string_of_expr e2
@@ -29,6 +29,7 @@ let rec string_of_expr = function
   | Sub(e1,e2) -> string_of_expr e1 ^ "-" ^ string_of_expr e2
   | Mul(e1,e2) -> string_of_expr e1 ^ "*" ^ string_of_expr e2
   | Eq(e1,e2) -> string_of_expr e1 ^ "==" ^ string_of_expr e2
+  | Neq(e1,e2) -> string_of_expr e1 ^ "!=" ^ string_of_expr e2
   | Leq(e1,e2) -> string_of_expr e1 ^ "<=" ^ string_of_expr e2
   | Le(e1,e2) -> string_of_expr e1 ^ "<" ^ string_of_expr e2                    
   | Geq(e1,e2) -> string_of_expr e1 ^ ">=" ^ string_of_expr e2
@@ -106,10 +107,10 @@ let string_of_storage _ =
 
 let string_of_sysstate (st : sysstate) (evl : ide list) =
   "storage=" ^ 
-  string_of_storage (get_storage st) ^ 
+  string_of_storage st.contracts ^ 
   ";" ^
   "envstack=" ^
-  string_of_envstack (get_envstack st) evl
+  string_of_envstack st.stackenv evl
 
 let rec union l1 l2 = match l1 with
     [] -> l2
@@ -126,8 +127,9 @@ let rec vars_of_expr = function
   | Or(e1,e2) 
   | Add(e1,e2)
   | Sub(e1,e2)
-  | Mul(e1,e2)      
+  | Mul(e1,e2) 
   | Eq(e1,e2) 
+  | Neq(e1,e2) 
   | Leq(e1,e2) 
   | Le(e1,e2)
   | Geq(e1,e2) 

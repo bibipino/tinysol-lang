@@ -62,6 +62,10 @@ let rec eval_expr (st : sysstate) (a : addr) = function
         (Int n1,Int n2) -> Bool(n1 = n2)
       | _ -> raise (TypeError "Eq")
     )    
+  | Neq(e1,e2) -> (match (eval_expr st a e1,eval_expr st a e2)  with
+        (Int n1,Int n2) -> Bool(n1 <> n2)
+      | _ -> raise (TypeError "Eq")
+    )    
   | Leq(e1,e2) -> (match (eval_expr st a e1,eval_expr st a e2)  with
         (Int n1,Int n2) -> Bool(n1 <= n2)
       | _ -> raise (TypeError "Leq")
@@ -118,10 +122,9 @@ let rec trace1_cmd = function
     | Block(vdl,c) ->
       let e = topenv st in
       let e' = eval_var_decls vdl e in
-      let st' = (get_storage st, e'::get_envstack st) in
-      Cmd(ExecBlock c, st', a)
+      Cmd(ExecBlock c, { st with stackenv = e'::st.stackenv} , a)
     | ExecBlock(c) -> (match trace1_cmd (Cmd(c,st,a)) with
-        | St st -> St (get_storage st, popenv st)
+        | St st -> St { st with stackenv = popenv st }
         | Cmd(c1',st1,a') -> Cmd(ExecBlock(c1'),st1,a'))
     | _ -> failwith "TODO")
 
@@ -155,8 +158,16 @@ let rec trace_rec_cmd n t =
     with NoRuleApplies -> [t]
 
 
+let init_storage = { balance=0; storage=botenv }
+
+let init_sysstate = { 
+    users = (fun _ -> 0);
+    contracts = (fun _ -> init_storage); 
+    stackenv = [botenv] 
+}
+
 let trace_cmd n_steps (c:cmd) (a:addr) =
-  trace_rec_cmd n_steps (Cmd(c,(botstorage,[botenv]),a))
+  trace_rec_cmd n_steps (Cmd(c,init_sysstate,a))
 
 
 (******************************************************************************)
@@ -164,8 +175,13 @@ let trace_cmd n_steps (c:cmd) (a:addr) =
 (******************************************************************************)
 
 (*
-let trace_tx n_steps (Tx(a,c,f,args)) s
-    = failwith "not implemented"
+let trace1_tx (tx: transaction) (st : sysstate) = 
+  Tx(a,c,f,args)
+*)
+
+(*
+let trace_tx (n_steps : int) (tx: transaction) (st : sysstate) = 
+  Tx(a,c,f,args)
 *)
 
 (**********************************************************************
