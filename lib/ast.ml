@@ -67,4 +67,4 @@ and fun_decls = fun_decl list
 type contract = Contract of ide * var_decls * fun_decls
 
 (* tx = sender:contract.function(args) *)
-type transaction = Tx of addr * ide * ide * args
+type transaction = Tx of addr * addr * ide * args

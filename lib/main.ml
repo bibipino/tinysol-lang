@@ -1,25 +1,13 @@
 open Ast
 open Types
 
-let parse_cmd (s : string) : cmd =
-  let lexbuf = Lexing.from_string s in
-  let ast = Parser.cmd_test Lexer.read_token lexbuf in
-  ast
-
-let parse_contract (s : string) : contract =
-  let lexbuf = Lexing.from_string s in
-  let ast = Parser.contract Lexer.read_token lexbuf in
-  ast
-  
-exception TypeError of string
-exception UnboundVar of string
-exception PredOfZero
-exception NoRuleApplies
-
 
 (******************************************************************************)
 (*                       Big-step semantics of expressions                    *)
 (******************************************************************************)
+
+exception TypeError of string
+exception NoRuleApplies
 
 let is_val = function
     True -> true
@@ -31,7 +19,7 @@ let is_val = function
 let rec eval_expr (st : sysstate) (a : addr) = function
     True -> Bool true
   | False -> Bool false
-  | Var x -> lookup st a x
+  | Var x -> lookup a x st
   | IntConst n -> Int n
   | AddrConst s -> Addr s
   | Not(e) -> (match eval_expr st a e with
@@ -177,7 +165,7 @@ let trace_cmd n_steps (c:cmd) (a:addr) (st : sysstate)=
 
 
 (******************************************************************************)
-(*                       Small-step semantics of transactions                 *)
+(* Funds an account in a system state. Creates account if it does not exist   *)
 (******************************************************************************)
 
 let faucet (a : addr) (n : int) (st : sysstate) : sysstate = 
@@ -188,11 +176,10 @@ let faucet (a : addr) (n : int) (st : sysstate) : sysstate =
     let as' = { balance = n; storage = botenv; code = None; } in
     { st with accounts = bind st.accounts a as'; active = a::st.active }
 
-let find_fun (Contract(_,_,fdl)) (f : ide) : fun_decl option =
-  List.fold_left 
-  (fun acc (Proc(g,al,c,m)) -> if acc <> None || g<>f then acc else Some (Proc(g,al,c,m)))
-  None
-  fdl
+
+(******************************************************************************)
+(*                       Deploys a contract in a system state                 *)
+(******************************************************************************)
 
 (* TODO: we should execute constructor!! *)
 
@@ -201,6 +188,17 @@ let deploy_contract (st : sysstate) (a : addr) (c : contract) : sysstate =
   else
     let as' = bind st.accounts a ({ balance=0; storage = init_storage c; code = Some c }) in
   { st with accounts = as'; active = a::st.active }
+
+
+(******************************************************************************)
+(* Executes steps of a transaction in a system state, returning a trace       *)
+(******************************************************************************)
+
+let find_fun (Contract(_,_,fdl)) (f : ide) : fun_decl option =
+  List.fold_left 
+  (fun acc (Proc(g,al,c,m)) -> if acc <> None || g<>f then acc else Some (Proc(g,al,c,m)))
+  None
+  fdl
 
 let exec_tx (n_steps : int) (Tx(a,b,f,_)) (st : sysstate) =
   if not (exists_account st a) then failwith ("sender address " ^ a ^ " does not exist") else
@@ -213,29 +211,8 @@ let exec_tx (n_steps : int) (Tx(a,b,f,_)) (st : sysstate) =
           trace_cmd n_steps c b st)
 
 
-(*
-let trace_tx (n_steps : int) (tx: transaction) (st : sysstate) = 
-  Tx(a,c,f,args)
-*)
-
-(**********************************************************************
- trace : int -> contract -> conf list
-
- Usage: trace n c performs n steps of the small-step semantics
- **********************************************************************)
-
-(*
-let trace n (Contract(d)) =
-  let (e,l) = sem_decl (botenv,0) d
-  in trace_rec n (Cmd(c,([e],botmem,l)))
-*)
-
-(*
-let trace n t = trace_rec n (Cmd(t,bot))
-*)
-
-
-(*
-let trace_tx n_steps c =
-  trace_rec_cmd n_steps (Cmd(c,[botstorage,botenv],a)))
-*)
+let exec_tx_list (n_steps : int) (txl : transaction list) (st : sysstate) = 
+  List.fold_left 
+  (fun sti tx -> exec_tx n_steps tx sti |> last_sysstate)
+  st
+  txl

@@ -1,6 +1,30 @@
 open Ast
 open Types
 
+(******************************************************************************)
+(*                                   Parsing utilities                        *)
+(******************************************************************************)
+
+let parse_cmd (s : string) : cmd =
+  let lexbuf = Lexing.from_string s in
+  let ast = Parser.cmd_test Lexer.read_token lexbuf in
+  ast
+
+let parse_contract (s : string) : contract =
+  let lexbuf = Lexing.from_string s in
+  let ast = Parser.contract Lexer.read_token lexbuf in
+  ast
+
+let parse_transaction (s : string) : transaction =
+  let lexbuf = Lexing.from_string s in
+  let ast = Parser.transaction Lexer.read_token lexbuf in
+  ast
+
+
+(******************************************************************************)
+(*                            Getting set of variables                        *)
+(******************************************************************************)
+
 let rec union l1 l2 = match l1 with
     [] -> l2
   | x::l1' -> (if List.mem x l2 then [] else [x]) @ union l1' l2
@@ -40,6 +64,10 @@ let vars_of_contract (Contract(_,vdl,_)) : ide list =
   List.fold_left (fun acc vd -> match vd with 
     IntVar x | BoolVar x | AddrVar x -> x::acc ) [] vdl 
 
+
+(******************************************************************************)
+(*                         Converting syntax to strings                       *)
+(******************************************************************************)
 
 let string_of_exprval = function
     Bool b -> string_of_bool b
@@ -183,7 +211,15 @@ let string_of_trace stl = match stl with
   | st::l -> (string_of_execstate evl st) ^ "\n--->\n" ^ helper l)
 in helper stl
 
+(******************************************************************************)
+(*                         Manipulating execution traces                      *)
+(******************************************************************************)
+
 let rec last = function
     [] -> failwith "last on empty list"
-  | [x] -> x
+  | [st] -> st
   | _::l -> last l
+
+let print_trace_and_return_last_sysstate tr = 
+  let st = last_sysstate tr in
+  tr |> string_of_trace |> print_string |> fun _ -> st

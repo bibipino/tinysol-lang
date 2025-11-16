@@ -19,6 +19,7 @@ open Ast
 %token <string> ID
 %token <string> CONST
 %token <string> STRING
+%token <string> ADDRLIT
 
 %token SKIP
 %token TAKES
@@ -75,7 +76,7 @@ contract:
 ;
 
 transaction:
-  | sender = ID; TOKSEP; contr = ID; FIELDSEP; f = ID; LPAREN; a = args; RPAREN { Tx(sender,contr,f,a) } 
+  | sender = ADDRLIT; TOKSEP; contr = ADDRLIT; FIELDSEP; f = ID; LPAREN; a = args; RPAREN { Tx(sender,contr,f,a) } 
 ;
 
 expr:

@@ -3,6 +3,8 @@ contract C1 {
     bool b;
   
     function g() public { 
-        x = x+1;
+        if (b) x = x+1;
+        else b=true;
     }
+
 }

@@ -1,47 +1,57 @@
+open TinysolLib.Ast
 open TinysolLib.Types       
 open TinysolLib.Utils
 open TinysolLib.Main
 
 
-let test_parse_cmd (cmd,t) =
-  cmd
+(********************************************************************************
+ test_parse_cmd : (command, expected AST)
+ ********************************************************************************)
+
+let test_parse_cmd (c : string) (t : cmd) =
+  c
   |> parse_cmd
   |> fun x -> x = t
 
-(********************************************************************************
- test_trace_cmd : (command, n_steps, variable, expected value after n_steps)
- ********************************************************************************)
-
-let test_trace_cmd (cmd,n_steps,var,exp_val) =
-  cmd
-  |> parse_cmd
-  |> fun c -> last (trace_cmd n_steps c "0xCAFE" init_sysstate)
-  |> fun t -> match t with
-  | St st -> lookup st "0xCAFE" var = exp_val
-  | Cmd(_,st,_) -> lookup st "0xCAFE" var = exp_val
-
 let%test "test_parse_cmd_1" = test_parse_cmd
-  ("skip;", Skip)  
+  "skip;" 
+  Skip  
 
 let%test "test_parse_cmd_2" = test_parse_cmd
-  ("x=51;", Assign("x",IntConst 51))  
+  "x=51;"
+  (Assign("x",IntConst 51))  
 
 let%test "test_parse_cmd_3" = test_parse_cmd
-  ("{ int x; x=51; }", Block([IntVar "x"],Assign("x",IntConst 51)))  
+  "{ int x; x=51; }" 
+  (Block([IntVar "x"],Assign("x",IntConst 51)))  
 
 let%test "test_parse_cmd_4" = test_parse_cmd
-  ("{ int x; x=51; x=x+1; }", Block([IntVar "x"],Seq(Assign("x",IntConst 51),Assign("x",Add(Var "x",IntConst 1)))))  
+  "{ int x; x=51; x=x+1; }"
+  (Block([IntVar "x"],Seq(Assign("x",IntConst 51),Assign("x",Add(Var "x",IntConst 1)))))  
 
 let%test "test_parse_cmd_5" = test_parse_cmd
-  ("{ int x; x=51; x=x+1; skip; }", 
-    Block([IntVar "x"],
+  "{ int x; x=51; x=x+1; skip; }" 
+  (Block([IntVar "x"],
     Seq(
       Assign("x",IntConst 51),
       Seq(
         Assign("x",Add(Var "x",IntConst 1)),
         Skip
       )
-    )))  
+    )))
+
+
+(********************************************************************************
+ test_trace_cmd : (command, n_steps, variable, expected value after n_steps)
+ ********************************************************************************)
+
+let test_trace_cmd (c,n_steps,var,exp_val) =
+  c
+  |> parse_cmd
+  |> fun c -> last (trace_cmd n_steps c "0xCAFE" init_sysstate)
+  |> fun t -> match t with
+  | St st -> lookup "0xCAFE" var st = exp_val
+  | Cmd(_,st,_) -> lookup "0xCAFE" var st = exp_val
 
 let%test "test_trace_cmd_1" = test_trace_cmd
   ("{ int x; x=51; skip; }", 2, "x", Int 51)  
@@ -78,3 +88,48 @@ let%test "test_trace_cmd_11" = test_trace_cmd
 
 let%test "test_trace_cmd_12" = test_trace_cmd
   ("{ int x; bool b; if (b) x=2; else b=true; skip; }", 2, "x", Int 0)  
+
+
+
+
+(********************************************************************************
+ test_exec_tx : (contract, transaction list, n_steps, variable, expected value after n_steps)
+ ********************************************************************************)
+
+let test_exec_tx (c: string) (txl: string list) (vars : ide list) (exp_vals : exprval list) =
+  let txl = List.map parse_transaction txl in
+  c
+  |> parse_contract
+  |> deploy_contract init_sysstate "0xC1"
+  |> faucet "0xA" 100
+  |> exec_tx_list 1000 txl 
+  |> fun st -> List.map (fun x -> lookup "0xC1" x st) vars 
+  |> fun vl -> vl = exp_vals
+
+let c1 = "contract C1 {
+    int x;
+    bool b;
+  
+    function g() public { 
+        if (b) x = x+1;
+        else b=true;
+    }
+}"
+
+let%test "test_exec_tx_1" = test_exec_tx
+  c1
+  ["0xA:0xC1.g()"] 
+  ["x"; "b"]
+  [Int 0; Bool true]  
+
+let%test "test_exec_tx_2" = test_exec_tx
+  c1
+  ["0xA:0xC1.g()"; "0xA:0xC1.g()"] 
+  ["x"; "b"]
+  [Int 1; Bool true]
+
+let%test "test_exec_tx_3" = test_exec_tx
+  c1
+  ["0xA:0xC1.g()"; "0xA:0xC1.g()"; "0xA:0xC1.g()"] 
+  ["x"; "b"]
+  [Int 2; Bool true]

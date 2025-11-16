@@ -32,6 +32,12 @@ type exec_state =
   | Cmd of cmd * sysstate * addr
 
 
+let rec last_sysstate = function
+    [] -> failwith "last on empty list"
+  | [St st] -> st
+  | _::l -> last_sysstate l
+
+
 (* Functions to access and manipulate the state *)
 
 let topenv (st: sysstate) : env = match st.stackenv with
@@ -48,7 +54,7 @@ let bind f x v = fun y -> if y=x then v else f y
 
 (* lookup for variable x in state st (tries first in storage of address a) *)
     
-let lookup (st : sysstate) (a : addr) (x : ide) : exprval =
+let lookup (a : addr) (x : ide) (st : sysstate) : exprval =
   try 
     (* look up for x in environment *)
     let e = topenv st in
@@ -86,5 +92,3 @@ let update_env (st : sysstate) (x:ide) (v:exprval) : sysstate =
       { st with stackenv = e'::el' }
     else failwith (x ^ " not bound in env")   
 
-exception TypeError of string
-exception UnboundVar of ide

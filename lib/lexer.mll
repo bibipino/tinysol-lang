@@ -10,6 +10,7 @@ let white = [' ' '\n' '\t']+
 let letter = ['a'-'z' 'A'-'Z']
 let chr = ['a'-'z' 'A'-'Z' '0'-'9' '_']
 let id = letter chr*
+let addrlit = '0' 'x' chr+
 let num = ['0'-'9']|['1'-'9']['0'-'9']*
 let newline = '\r' | '\n' | "\r\n"
 
@@ -57,6 +58,7 @@ rule read_token =
   | "public" { PUBLIC }
   | "private" { PRIVATE }
   | id { ID (Lexing.lexeme lexbuf) }
+  | addrlit { ADDRLIT (Lexing.lexeme lexbuf) }
   | num { CONST (Lexing.lexeme lexbuf) }
   | newline { new_line lexbuf; read_token lexbuf }  
   | eof { EOF }
