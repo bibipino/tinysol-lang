@@ -2,6 +2,35 @@ open Ast
 open Types
 
 (******************************************************************************)
+(*                                   File utilities                           *)
+(******************************************************************************)
+
+(* read file, and output it to a string *)
+
+let read_file filename =
+  let ch = open_in filename in
+  let s = really_input_string ch (in_channel_length ch) in
+  close_in ch; s
+
+(* read line from standard input, and output it to a string *)
+
+let read_line () =
+  try Some(read_line())
+  with End_of_file -> None
+;;
+
+let read_lines filename =
+  let chan = open_in filename in
+  let rec loop acc =
+    match input_line chan with
+    | line -> loop (line :: acc)
+    | exception End_of_file ->
+        close_in chan;
+        List.rev acc
+  in
+  loop []
+
+(******************************************************************************)
 (*                                   Parsing utilities                        *)
 (******************************************************************************)
 
@@ -20,6 +49,10 @@ let parse_transaction (s : string) : transaction =
   let ast = Parser.transaction Lexer.read_token lexbuf in
   ast
 
+let parse_cli_cmd (s : string) : cli_cmd =
+  let lexbuf = Lexing.from_string s in
+  let ast = Parser.cli_cmd Lexer.read_token lexbuf in
+  ast
 
 (******************************************************************************)
 (*                            Getting set of variables                        *)
@@ -185,10 +218,11 @@ let string_of_accounts (st : sysstate) =
 
 let string_of_sysstate (evl : ide list) (st : sysstate) =
   "accounts: " ^ 
-  string_of_accounts st ^ 
-  "\n" ^
+  string_of_accounts st ^
+  if evl=[] then "" else 
+  ("\n" ^
   "envstack: " ^
-  string_of_envstack st.stackenv evl
+  string_of_envstack st.stackenv evl)
 
 let string_of_execstate evl = function
   | St st -> string_of_sysstate evl st
@@ -206,6 +240,10 @@ let string_of_trace stl = match stl with
   | st::l -> (string_of_execstate evl st) ^ "\n--->\n" ^ helper l)
 in helper stl
 
+let string_of_transaction (Tx(sender,rcv,f,al)) =
+  sender ^ ":" ^ rcv ^ "." ^ f ^ string_of_args al
+
+
 (******************************************************************************)
 (*                         Manipulating execution traces                      *)
 (******************************************************************************)
@@ -221,3 +259,4 @@ let print_sysstate_id (st : sysstate) : sysstate =
 let print_trace_and_return_last_sysstate tr = 
   let st = last_sysstate tr in
   tr |> string_of_trace |> print_string |> fun _ -> st
+

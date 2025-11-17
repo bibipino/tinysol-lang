@@ -51,6 +51,9 @@ open Ast
 %token PUBLIC
 %token PRIVATE
 
+%token FAUCET
+%token DEPLOY
+
 %left OR
 %left AND
 %nonassoc NOT
@@ -62,7 +65,6 @@ open Ast
 %nonassoc ELSE DO
 
 %start <contract> contract
-%start <transaction> transaction
 %type <exprval> value
 %type <var_decl> var_decl
 %type <modifier> modifier
@@ -73,14 +75,13 @@ open Ast
 
 %start <cmd> cmd_test
 
+%start <transaction> transaction
+%start <cli_cmd> cli_cmd
+
 %%
 
 contract:
   | CONTRACT; c=ID; LBRACE; vdl = list(var_decl); fdl = list(fun_decl); RBRACE; EOF { Contract(c,vdl,fdl) }
-;
-
-transaction:
-  | sender = ADDRLIT; TOKSEP; contr = ADDRLIT; FIELDSEP; f = ID; LPAREN; al = actual_args; RPAREN { Tx(sender,contr,f,al) } 
 ;
 
 actual_args:
@@ -162,4 +163,14 @@ formal_arg:
   | INT; x = ID { IntVar x }
   | BOOL; x = ID { BoolVar x }
   | ADDR; x = ID { AddrVar x }
+;
+
+transaction:
+  | sender = ADDRLIT; TOKSEP; contr = ADDRLIT; FIELDSEP; f = ID; LPAREN; al = actual_args; RPAREN { Tx(sender,contr,f,al) } 
+;
+
+cli_cmd:
+  | tx = transaction { ExecTx tx }
+  | FAUCET; a = ADDRLIT; n = CONST { Faucet(a, int_of_string n) }
+  | DEPLOY; a = ADDRLIT; filename = STRING { Deploy(a,filename) }
 ;

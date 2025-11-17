@@ -68,3 +68,12 @@ type contract = Contract of ide * var_decls * fun_decls
 
 (* tx = sender:contract.function(args) *)
 type transaction = Tx of addr * addr * ide * (exprval list)
+
+(******************************************************************************)
+(*                                    Tinysol CLI                             *)
+(******************************************************************************)
+
+type cli_cmd = 
+  | Faucet of addr * int
+  | Deploy of addr * string
+  | ExecTx of transaction  

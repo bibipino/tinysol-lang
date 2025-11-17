@@ -38,7 +38,6 @@ rule read_token =
   | "<" { LE }
   | ">=" { GEQ }  
   | ">" { GE }
-  | "?" { RECEIVESEP }
   | "." { FIELDSEP }
   | "this" { THIS }
   | "msg.sender" { MSGSENDER }
@@ -60,6 +59,8 @@ rule read_token =
   | "address" { ADDR }
   | "public" { PUBLIC }
   | "private" { PRIVATE }
+  | "faucet" { FAUCET }
+  | "deploy" { DEPLOY }
   | id { ID (Lexing.lexeme lexbuf) }
   | addrlit { ADDRLIT (Lexing.lexeme lexbuf) }
   | num { CONST (Lexing.lexeme lexbuf) }
