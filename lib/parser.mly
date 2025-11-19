@@ -158,7 +158,8 @@ payable:
   | /* empty */ { false }
 
 fun_decl:
-  | CONSTR; LPAREN; al = formal_args; RPAREN; LBRACE; c = cmd; RBRACE { Constr(al,c,false) }
+  | CONSTR; LPAREN; al = formal_args; RPAREN; p = payable; LBRACE; RBRACE { Constr(al,Skip,p) }
+  | CONSTR; LPAREN; al = formal_args; RPAREN; p = payable; LBRACE; c = cmd; RBRACE { Constr(al,c,p) }
   | FUN; f = ID; LPAREN; al = formal_args; RPAREN; v=visibility; p = payable; LBRACE; c = cmd; RBRACE { Proc(f,al,c,v,p) }
   | FUN; f = ID; LPAREN; al = formal_args; RPAREN; v=visibility; p = payable; LBRACE; RBRACE { Proc(f,al,Skip,v,p) }
 ;

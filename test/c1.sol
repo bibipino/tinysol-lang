@@ -4,6 +4,8 @@ contract C1 {
     int x;
     bool b;
 
+    constructor() payable {}
+
     function f1() public payable { 
         if (b) x = x+1;
         else b=true;
