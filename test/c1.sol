@@ -10,13 +10,12 @@ contract C1 {
     }
 
     function f2(address a) public {
-        if (this.balance > 0)
+        if (address(this).balance > 0)
             a.transfer(1);
-        else skip;
     }
 
     function f3(uint amt) public {
-        if (this.balance < 8) b=false;
+        if (address(this).balance < 8) b=false;
         else msg.sender.transfer(amt);
     }
 

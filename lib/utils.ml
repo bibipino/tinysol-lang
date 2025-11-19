@@ -70,7 +70,9 @@ let rec vars_of_expr = function
   | This -> []               
   | Var x -> [x]
   | BalanceOf e
-  | Not e -> vars_of_expr e
+  | Not e
+  | IntCast e
+  | AddrCast e ->  vars_of_expr e
   | And(e1,e2) 
   | Or(e1,e2) 
   | Add(e1,e2)
@@ -134,7 +136,9 @@ let rec string_of_expr = function
   | Leq(e1,e2) -> string_of_expr e1 ^ "<=" ^ string_of_expr e2
   | Le(e1,e2) -> string_of_expr e1 ^ "<" ^ string_of_expr e2                    
   | Geq(e1,e2) -> string_of_expr e1 ^ ">=" ^ string_of_expr e2
-  | Ge(e1,e2) -> string_of_expr e1 ^ ">" ^ string_of_expr e2                    
+  | Ge(e1,e2) -> string_of_expr e1 ^ ">" ^ string_of_expr e2
+  | IntCast(e) -> "int(" ^ string_of_expr e ^ ")"
+  | AddrCast(e) -> "address(" ^ string_of_expr e ^ ")"
 
 and string_of_cmd = function
     Skip -> "skip;"

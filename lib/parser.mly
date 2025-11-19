@@ -116,6 +116,8 @@ expr:
   | e1=expr; LE; e2=expr { Le(e1,e2) }
   | e1=expr; GEQ; e2=expr { Geq(e1,e2) }
   | e1=expr; GE; e2=expr { Ge(e1,e2) }
+  | INT; LPAREN; e=expr; RPAREN; { IntCast(e) }
+  | ADDR; LPAREN; e=expr; RPAREN; { AddrCast(e) }
   | x = ID { Var(x) }
   | LPAREN; e = expr; RPAREN { e }
 ;
@@ -134,6 +136,7 @@ cmd:
   | IF LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; ELSE c2 = nonseq_cmd { If(e,c1,c2) }
   | IF LPAREN; e = expr; RPAREN; c1 = nonseq_cmd; ELSE LBRACE; c2 = cmd; RBRACE; { If(e,c1,c2) }
   | IF LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; ELSE; LBRACE; c2 = cmd; RBRACE { If(e,c1,c2) }
+  | IF LPAREN; e = expr; RPAREN; c1 = nonseq_cmd { If(e,c1,Skip) }
   | LBRACE; c = cmd; RBRACE { c }
   | LBRACE; vdl = list(var_decl) c = cmd; RBRACE { Block(vdl, c) }
 ;

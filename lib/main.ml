@@ -89,6 +89,16 @@ let rec eval_expr (st : sysstate) (a : addr) = function
         (Int n1,Int n2) -> Bool(n1 > n2)
       | _ -> raise (TypeError "Ge")
     )          
+  | IntCast(e) -> (match eval_expr st a e  with
+      | Int n -> Int n
+      | _ -> raise (TypeError "IntCast")
+    )          
+  | AddrCast(e) -> (match eval_expr st a e  with
+      | Addr a -> Addr a
+      | _ -> raise (TypeError "AddrCast")
+    )          
+  
+
 
 let eval_var_decls (vdl : var_decl list) (e : env): env =
   List.fold_left

@@ -33,6 +33,8 @@ type expr =
   | Le of expr * expr           
   | Geq of expr * expr
   | Ge of expr * expr           
+  | IntCast of expr
+  | AddrCast of expr
 
 (* commands *)
           
