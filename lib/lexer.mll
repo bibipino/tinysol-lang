@@ -51,6 +51,8 @@ rule read_token =
   | "contract" { CONTRACT }
   | "skip" { SKIP }
   | "="  { TAKES }
+  | "+="  { ADDTAKES }
+  | "-="  { SUBTAKES }
   | ";"  { CMDSEP }
   | "if" { IF }
   | "else" { ELSE }

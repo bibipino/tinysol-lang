@@ -23,6 +23,8 @@ open Ast
 
 %token SKIP
 %token TAKES
+%token ADDTAKES
+%token SUBTAKES
 %token CMDSEP
 %token IF
 %token ELSE
@@ -144,7 +146,11 @@ nonseq_cmd:
   | SKIP; CMDSEP;  { Skip }
   | REQ; e = expr; CMDSEP; { Req(e) } 
   | x = ID; TAKES; e = expr; CMDSEP; { Assign(x,e) }
+  | x = ID; ADDTAKES; e = expr; CMDSEP; { Assign(x,Add(Var(x),e)) }
+  | x = ID; SUBTAKES; e = expr; CMDSEP; { Assign(x,Sub(Var(x),e)) }
   | x = ID; LSQUARE; ek = expr; RSQUARE; TAKES; ev = expr; CMDSEP; { MapW(x,ek,ev) }
+  | x = ID; LSQUARE; ek = expr; RSQUARE; ADDTAKES; ev = expr; CMDSEP; { MapW(x,ek,Add(MapR(Var x,ek),ev)) }
+  | x = ID; LSQUARE; ek = expr; RSQUARE; SUBTAKES; ev = expr; CMDSEP; { MapW(x,ek,Sub(MapR(Var x,ek),ev)) }
   | rcv=expr; FIELDSEP; TRANSFER; LPAREN; amt=expr; RPAREN; CMDSEP; { Send(rcv,amt) }
   | f = ID; LPAREN; el = separated_list(ARGSEP, expr) RPAREN; CMDSEP; { Call(f,el) }
 ;
@@ -171,9 +177,13 @@ base_type:
   | BOOL { BoolBT }
   | ADDR { AddrBT }
 
+optional_id:
+  | ID { }
+  | /* empty */ { }
+
 var_type:
   | t = base_type { VarT(t) }
-  | MAPPING; LPAREN; t1 = base_type; MAPSTO; t2 = base_type; RPAREN { MapT(t1,t2) }
+  | MAPPING; LPAREN; t1 = base_type; optional_id; MAPSTO; t2 = base_type; optional_id; RPAREN { MapT(t1,t2) }
 
 var_decl:
   | t = var_type; x = ID; CMDSEP { t,x }
@@ -187,7 +197,7 @@ visibility:
 payable:
   | PAYABLE { true }
   | /* empty */ { false }
-
+  
 fun_decl:
   | CONSTR; LPAREN; al = formal_args; RPAREN; p = payable; LBRACE; RBRACE { Constr(al,Skip,p) }
   | CONSTR; LPAREN; al = formal_args; RPAREN; p = payable; LBRACE; c = cmd; RBRACE { Constr(al,c,p) }
