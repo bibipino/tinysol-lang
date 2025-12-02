@@ -1,5 +1,42 @@
 open Ast
 
+let is_val = function
+  | BoolConst _ 
+  | IntConst _
+  | AddrConst _ -> true
+  | _ -> false
+
+let exprval_of_expr = function
+  | BoolConst b -> (Bool b)
+  | IntConst n  -> (Int n)
+  | AddrConst s -> (Addr s)
+  | _ -> failwith ("expression is not a value")
+
+let int_of_expr e = match e with 
+  | IntConst n  -> n
+  | _ -> failwith "IntConst was expected"
+
+let bool_of_expr e = match e with 
+  | BoolConst b -> b
+  | _  -> failwith "True or False was expected"
+
+let addr_of_expr e = match e with 
+  | AddrConst a -> a
+  | _ -> failwith "AddrConst was expected"
+
+let expr_of_exprval = function
+  | Bool b -> BoolConst b
+  | Int n -> IntConst n
+  | Addr b -> AddrConst b
+  | Map _ -> failwith "step_expr: wrong type checking of map?"
+
+let addr_of_exprval v = match v with 
+  | Addr a -> a
+  | Bool _ -> failwith "value has type Bool but an Addr was expected"
+  | Int _ -> failwith "value has type Int but an Addr was expected"
+  | Map _ -> failwith "value has type Map but an Addr was expected"
+
+
 (* local environment: 
     maps local variables, plus sender and value
     this is a transient storage, not preserved between calls
@@ -23,7 +60,7 @@ type sysstate = {
 (* execution state of a command *)
 type exec_state = 
   | St of sysstate 
-  | Cmd of cmd * sysstate * addr
+  | CmdSt of cmd * sysstate
   | Reverted
 
 let rec last_sysstate = function
@@ -57,7 +94,7 @@ let lookup_env (x : ide) (el : env list) : exprval option =
   None
   el
 
-let lookup_var (_ : addr) (x : ide) (st : sysstate) : exprval =
+let lookup_var (x : ide) (st : sysstate) : exprval =
   (* look up for x in environment stack *)
   match lookup_env x st.stackenv with
   | Some v -> v 
@@ -74,8 +111,9 @@ let lookup_balance (a : addr) (st : sysstate) : int =
   try (st.accounts a).balance
   with _ -> 0
 
-let lookup_enum_option (st : sysstate) (a : addr) (enum_name : ide) (option_name : ide) : int option = 
+let lookup_enum_option (st : sysstate) (enum_name : ide) (option_name : ide) : int option = 
   try 
+    let a = addr_of_exprval (Option.get(lookup_env "this" st.stackenv)) in 
     match (st.accounts a).code with
     | Some(Contract(_,edl,_,_)) -> 
       edl
@@ -87,8 +125,9 @@ let lookup_enum_option (st : sysstate) (a : addr) (enum_name : ide) (option_name
     | _ -> assert(false) (* should not happen *)
   with _ -> None
 
-let reverse_lookup_enum_option (st : sysstate) (a : addr) (enum_name : ide) (option_index : int) : ide option = 
-  try 
+let reverse_lookup_enum_option (st : sysstate) (enum_name : ide) (option_index : int) : ide option = 
+  try
+    let a = addr_of_exprval (Option.get(lookup_env "this" st.stackenv)) in 
     match (st.accounts a).code with
     | Some(Contract(_,edl,_,_)) -> 
       edl
@@ -117,7 +156,7 @@ let rec update_env (el : env list) (x:ide) (v:exprval) : env list =
       (bind x v e) :: el'
     with _ -> e :: (update_env el' x v)
 
-let update_var (st : sysstate) (_:addr) (x:ide) (v:exprval) : sysstate = 
+let update_var (st : sysstate) (x:ide) (v:exprval) : sysstate = 
   (* first tries to update environment if x is bound there *)
    try 
     let el' = update_env st.stackenv x v in
@@ -135,7 +174,8 @@ let update_var (st : sysstate) (_:addr) (x:ide) (v:exprval) : sysstate =
     | _ -> failwith "this not bound or not bound to an address"
 
 
-let update_map (st : sysstate) (a:addr) (x:ide) (k:exprval) (v:exprval) : sysstate = 
+let update_map (st : sysstate) (x:ide) (k:exprval) (v:exprval) : sysstate = 
+  let a = addr_of_exprval (Option.get(lookup_env "this" st.stackenv)) in 
   let cs = st.accounts a in
     if exists_ide_in_storage cs x then 
       match cs.storage x with

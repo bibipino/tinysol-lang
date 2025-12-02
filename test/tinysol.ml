@@ -148,10 +148,10 @@ let test_exec_cmd (c,n_steps,var,exp_val) =
   c
   |> parse_cmd
   |> blockify_cmd
-  |> fun c -> last (trace_cmd n_steps c "0xCAFE" init_sysstate)
+  |> fun c -> last (trace_cmd n_steps c init_sysstate)
   |> fun t -> match t with
-  | St st -> lookup_var "0xCAFE" var st = exp_val
-  | Cmd(_,st,_) -> lookup_var "0xCAFE" var st = exp_val
+  | St st -> lookup_var var st = exp_val
+  | CmdSt(_,st) -> lookup_var var st = exp_val
   | Reverted -> false
 
 let%test "test_exec_cmd_1" = test_exec_cmd
@@ -225,7 +225,7 @@ let test_exec_tx (src: string) (txl: string list) (els : string list) =
   |> faucet "0xB" 100
   |> deploy_contract { txsender="0xA"; txto="0xC"; txfun="constructor"; txargs=[]; txvalue=0; } src 
   |> exec_tx_list 1000 txl 
-  |> fun st -> List.map (fun x -> x |> parse_expr |> eval_expr "0xC" { st with stackenv = [bind "this" (Addr "0xC") botenv]}) els 
+  |> fun st -> List.map (fun x -> x |> parse_expr |> eval_expr { st with stackenv = [bind "this" (Addr "0xC") botenv]}) els 
   |> List.for_all (fun v -> v = Bool true)
 
 let c1 = "contract C {
@@ -435,7 +435,7 @@ let test_exec_fun (src1: string) (src2: string) (txl : string list) (els : (addr
   |> deploy_contract { txsender="0xA"; txto="0xC"; txfun="constructor"; txargs=[]; txvalue=0; } src1 
   |> deploy_contract { txsender="0xA"; txto="0xD"; txfun="constructor"; txargs=[]; txvalue=100; } src2 
   |> exec_tx_list 1000 txl 
-  |> fun st -> List.map (fun (a,x) -> x |> parse_expr |> eval_expr a { st with stackenv = [bind "this" (Addr a) botenv]}) els 
+  |> fun st -> List.map (fun (a,x) -> x |> parse_expr |> eval_expr { st with stackenv = [bind "this" (Addr a) botenv]}) els 
   |> List.for_all (fun v -> v = Bool true)
 
 let%test "test_proc_1" = test_exec_fun
@@ -480,6 +480,35 @@ let%test "test_proc_7" = test_exec_fun
   ["0xA:0xD.g()"] 
   [("0xC","x==10")]
 
+let%test "test_proc_8" = test_exec_fun
+  "contract C {  
+      function f() public payable { }
+      function g(uint amt) public { msg.sender.transfer(amt); } 
+  }"
+  "contract D { 
+      C c; uint x; 
+      constructor() payable { c = \"0xC\"; } 
+      function dp(uint amt) public { c.f{value:amt}(); }
+      function wd(uint amt) public { c.g(amt); } 
+  }"
+  ["0xA:0xD.dp(10)"] 
+  [("0xC","this.balance==10"); ("0xD","this.balance==90")]
+
+let%test "test_proc_9" = test_exec_fun
+  "contract C {  
+      function f() public payable { }
+      function g(uint amt) public { msg.sender.transfer(amt); } 
+  }"
+  "contract D { 
+      C c; uint x; 
+      constructor() payable { c = \"0xC\"; } 
+      function dp(uint amt) public { c.f{value:amt}(); }
+      function wd(uint amt) public { c.g(amt); } 
+  }"
+  ["0xA:0xD.dp(10)"; "0xA:0xD.wd(5)"] 
+  [("0xC","this.balance==5"); ("0xD","this.balance==95")]
+
+
 let%test "test_fun_1" = test_exec_fun
   "contract C { function f() public returns(int) { return(1); } }"
   "contract D { C c; uint x; constructor() payable { c = \"0xC\"; } function g() public { x = c.f(); } }"
@@ -503,6 +532,27 @@ let%test "test_fun_3" = test_exec_fun
   "contract D { C c; uint x; constructor() payable { c = \"0xC\"; } function g() public { x = c.f(); } }"
   ["0xA:0xD.g()"] 
   [("0xC","y==123"); ("0xD","x==124")]
+
+let%test "test_fun_4" = test_exec_fun
+  "contract C { uint y; function f() public payable returns(int) { y=8; return(y+1);} }"
+  "contract D { C c; uint x; constructor() payable { c = \"0xC\"; } function g() public { x = c.f{value:1}(); } }"
+  ["0xA:0xD.g()"] 
+  [("0xC","y==8 && this.balance==1"); ("0xD","x==9 && this.balance==99")]
+
+let%test "test_fun_5" = test_exec_fun
+  "contract C { uint y; function f(int z) public payable returns(int) { y=z+1; return(z+1+msg.value);} }"
+  "contract D { C c; uint x; constructor() payable { c = \"0xC\"; } function g() public { x = c.f{value:2}(1); } }"
+  ["0xA:0xD.g()"] 
+  [("0xC","y==2 && this.balance==2"); ("0xD","x==4 && this.balance==98")]
+
+let%test "test_fun_6" = test_exec_fun
+  "contract C { D d; uint y; constructor() payable { d = \"0xD\"; } 
+      function f() public returns(int) { y = d.h(); return(y+1); } }"
+  "contract D { C c; uint x; constructor() payable { c = \"0xC\"; } 
+      function g() public { x = c.f()+1; }
+      function h() public returns(int) { return (1+1); } }"
+  ["0xA:0xD.g()"] 
+  [("0xC","y==2"); ("0xD","x==4")]
 
 let test_typecheck (src: string) (exp : bool)=
   let c = src |> parse_contract |> blockify_contract in 
