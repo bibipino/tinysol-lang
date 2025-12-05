@@ -93,7 +93,7 @@ open Ast
 %type <visibility> visibility
 %type <fun_decl> fun_decl
 %type <cmd> cmd
-%type <var_decls> formal_args
+%type <var_decl list> formal_args
 %type <expr> expr 
 
 %start <cmd> cmd_eof

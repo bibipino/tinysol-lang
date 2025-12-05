@@ -220,7 +220,7 @@ let rec typecheck_expr (edl : enum_decl list) (vdl : var_decl list) = function
   | FunCall(_) -> failwith "TODO"
   | ExecFunCall(_) -> failwith "TODO"
 
-let is_immutable (x : ide) (vdl : var_decls) = 
+let is_immutable (x : ide) (vdl : var_decl list) = 
   List.fold_left (fun acc vd -> match vd with
   | VarT(_,i),y when y=x -> i
   | _ -> acc  
@@ -228,7 +228,7 @@ let is_immutable (x : ide) (vdl : var_decls) =
   false 
   vdl
 
-let typecheck_local_decls (vdl : var_decls) = 
+let typecheck_local_decls (vdl : var_decl list) = 
   List.for_all
   (fun vd -> match vd with 
     | MapT(_),_ -> false
