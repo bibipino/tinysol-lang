@@ -386,6 +386,56 @@ let%test "test_shortcut_4" = test_exec_tx
   ["0xA:0xC.f()"; "0xA:0xC.f()"] 
   [("x==5");]
 
+
+let%test "test_mutability_1" = test_exec_tx
+  "contract C {
+      uint x;
+      function f() public { x = 1; }
+  }"
+  ["0xA:0xC.f()"] 
+  [("x==1");]
+
+let%test "test_mutability_2" = test_exec_tx
+  "contract C {
+      uint x;
+      function f() public view { x = 1; }
+  }"
+  ["0xA:0xC.f()"] 
+  [("x==0");] (* f cannot be declared as view because it (potentially) modifies the state *)
+
+let%test "test_mutability_3" = test_exec_tx
+  "contract C {
+      uint x;
+      function f() public pure returns(uint) { return (x+1); }
+      function g() public { x = this.f(); }
+  }"
+  ["0xA:0xC.g()"] 
+  [("x==0");] (* f cannot be declared as pure because it reads the state *)
+
+let%test "test_mutability_4" = test_exec_tx
+  "contract C {
+      uint x;
+      function f() public view returns(uint) { return (x+1); }
+      function g() public { x = this.f(); }
+  }"
+  ["0xA:0xC.g()"] 
+  [("x==1");]
+
+let%test "test_mutability_5" = test_exec_tx
+  "contract C {
+    function f() public { }
+  }"
+  ["0xA:0xC.f{value:1}()"] 
+  [("this.balance==0");] (* wei can be sent only to payable functions *) 
+
+let%test "test_mutability_6" = test_exec_tx
+  "contract C {
+    uint x;
+    function f() public { require(msg.value==0); x=1; }
+  }"
+  ["0xA:0xC.f{value:0}()"] 
+  [("x==0");] (* msg.value can only be used in payable functions *)
+
 (********************************************************************************
  test_exec_fun : 
  - src1, src2: the contracts that will be deployed for testing,
@@ -474,7 +524,6 @@ let%test "test_proc_9" = test_exec_fun
   }"
   ["0xA:0xD.dp(10)"; "0xA:0xD.wd(5)"] 
   [("0xC","this.balance==5"); ("0xD","this.balance==95")]
-
 
 let%test "test_fun_1" = test_exec_fun
   "contract C { function f() public returns(int) { return(1); } }"
