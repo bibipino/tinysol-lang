@@ -40,7 +40,7 @@ let rec step_expr (e,st) = match e with
   | And(e1,e2) when is_val e1 && is_val e2 ->               	
     let (b1,b2) = bool_of_expr e1,bool_of_expr e2 in 
     (BoolConst (b1 && b2), st)         
-  | And(e1,e2) when is_val e1 ->              					
+  | And(e1,e2) when is_val e1 ->              						(*Caso shortC*)
 	(match exprval_of_expr e1 with 
 	| Bool false -> (BoolConst false, st) 						
 	| Bool true -> 
@@ -52,7 +52,7 @@ let rec step_expr (e,st) = match e with
   | Or(e1,e2) when is_val e1 && is_val e2 ->
     let (b1,b2) = bool_of_expr e1,bool_of_expr e2 in 
     (BoolConst(b1 || b2), st)
-  | Or(e1,e2) when is_val e1 ->
+  | Or(e1,e2) when is_val e1 ->										(*Caso shortC*)
 	(match exprval_of_expr e1 with
 	| Bool true -> (BoolConst true, st) 						
 	| Bool false ->
