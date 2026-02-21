@@ -40,7 +40,10 @@ let rec step_expr (e,st) = match e with
   | And(e1,e2) when is_val e1 && is_val e2 ->               	(*Caso in cui entrambi sono variabili*)
     let (b1,b2) = bool_of_expr e1,bool_of_expr e2 in 
     (BoolConst (b1 && b2), st)         
-  | And(e1,e2) when is_val e1 ->              					(*Caso in cui solo e1 è una variabile, quindi si valuta e2*)          
+  | And(e1,e2) when is_val e1 ->              					(*Caso in cui solo e1 è una variabile, quindi si valuta e2*)
+	match exprval_of_expr e1 with
+	| Bool false -> (BoolConst false, st) 						(* short-circuit *)
+	| Bool true -> 
     let (e2', st') = step_expr (e2, st) in (And(e1,e2'), st')
   | And(e1,e2) ->                             					(*Caso in cui nessuno dei due è una variabile, quindi si valuta e1*)
     let (e1', st') = step_expr (e1, st) in (And(e1',e2), st')
@@ -49,6 +52,9 @@ let rec step_expr (e,st) = match e with
     let (b1,b2) = bool_of_expr e1,bool_of_expr e2 in 
     (BoolConst(b1 || b2), st)
   | Or(e1,e2) when is_val e1 ->
+	match exprval_of_expr e1 with
+	| Bool true -> (BoolConst true, st) 						(* short-circuit *)
+	| Bool false ->
     let (e2', st') = step_expr (e2, st) in (Or(e1,e2'), st')
   | Or(e1,e2) -> 
     let (e1', st') = step_expr (e1, st) in (Or(e1',e2), st')
