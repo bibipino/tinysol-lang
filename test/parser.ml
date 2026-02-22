@@ -83,6 +83,18 @@ let%test "test_parse_cmd_15" = test_parse_cmd
   "x = 100 * 2 / 5;" 
   (Assign ("x", Div(Mul(IntConst 100, IntConst 2), IntConst 5)))
 
+let%test "test_parse_cmd_16" = test_parse_cmd
+  "x = 100 / 2 * 0;" 
+  (Assign ("x", Mul(Div(IntConst 100, IntConst 2), IntConst 0)))
+
+let%test "test_parse_cmd_17" = test_parse_cmd
+  "x = 100 * 0 / 5;" 
+  (Assign ("x", Div(Mul(IntConst 100, IntConst 0), IntConst 5)))
+
+let%test "test_parse_cmd_18" = test_parse_cmd
+  "x = 100 * 0 / 0;" 
+  (Assign ("x", Div(Mul(IntConst 100, IntConst 0), IntConst 0)))
+
 let%test "test_parse_contract_1" = try 
   let _ = parse_contract
     "contract C {
