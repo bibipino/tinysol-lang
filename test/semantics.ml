@@ -19,19 +19,19 @@ let test_exec_cmd (c,n_steps,var,exp_val) =
   | Returned _ -> false
 
 (*Test short circuit AND 1. Caso in cui lo short circuit avviene*)
-let%test "test_exec_cmd_short_c1" = test_exec_cmd 
-  ("{ bool b; b = false && (true && false); skip; }", 3, "b", Bool false)
+let%test "test_short_c1" = test_exec_cmd 
+  ("{ bool b; b = true; b = false && (true && false); skip; }", 4, "b", Bool false)
 
 (*Test short circuit AND 1. Caso in cui lo short circuit NON avviene*)
-let%test "test_exec_cmd_short_c2" = test_exec_cmd
+let%test "test_short_c2" = test_exec_cmd
   ("{ bool b; b = true && (false && true); skip; }", 4, "b", Bool false)
 
 (*Test short circuit OR 1. Caso in cui lo short circuit avviene*)
-let%test "test_exec_cmd_short_c3" = test_exec_cmd 
+let%test "test_short_c3" = test_exec_cmd 
   ("{ bool b; b = true || (true || false); skip; }", 3, "b", Bool true)
 
 (*Test short circuit OR 1. Caso in cui lo short circuit NON avviene*)
-let%test "test_exec_cmd_short_c4" = test_exec_cmd
+let%test "test_short_c4" = test_exec_cmd
   ("{ bool b; b = false || (false || true); skip; }", 4, "b", Bool true)
 
 let%test "test_exec_cmd_1" = test_exec_cmd
