@@ -20,9 +20,8 @@ let test_exec_cmd (c,n_steps,var,exp_val) =
 
 (*Test div by 0*)
 let%test "test_div_by_zero" =
-  (try test_exec_cmd ("{ int x; x = 1 / 0; skip; }", 3, "x", Int 0) with
-   | Failure _ -> true
-   | _ -> false)
+  try let _ = test_exec_cmd ("{ int x; x = 1 / 0; skip; }", 3, "x", Int 0) in false
+  with Failure _ -> true
 
 (*Test short circuit AND 1. Caso in cui lo short circuit avviene*)
 let%test "test_short_c1" = test_exec_cmd 

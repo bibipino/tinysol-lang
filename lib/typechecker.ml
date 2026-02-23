@@ -266,7 +266,8 @@ let rec typecheck_expr (f : ide) (edl : enum_decl list) vdl = function
 
   | Div(e1,e2) ->
     (match (typecheck_expr f edl vdl e1,typecheck_expr f edl vdl e2) with
-     | Ok(IntConstET n1), Ok(IntConstET n2) when n2 <> 0 -> Ok(IntConstET (n1 / n2))
+     | Ok(IntConstET n1), Ok(IntConstET n2) -> if n2<>0 then Ok(IntConstET (n1 / n2)) else 
+      Error [TypeError (f,e2,IntConstET n2,IntET)]
      | Ok(t1),Ok(t2) when subtype t1 UintET && subtype t2 UintET -> Ok(UintET)
      | Ok(t1),Ok(t2) when subtype t1 IntET && subtype t2 IntET -> Ok(IntET)
      | Ok(t1),_ when not (subtype t1 IntET) -> Error [TypeError (f,e1,t1,IntET)]
