@@ -64,6 +64,8 @@ let typeckeck_result_from_expr_result (out : typecheck_expr_result) : typecheck_
   | Ok(_) -> Ok()
 
 (* The following exceptions represent the all possible errors detected by the typechecker *)
+exception DivisionByZero of ide * expr
+
 exception TypeError of ide * expr * exprtype * exprtype
 exception NotMapError of ide * expr
 exception ImmutabilityError of ide * ide
@@ -80,6 +82,7 @@ let logfun f s = "(" ^ f ^ ")\t" ^ s
 
 (* Prettyprinting of typechecker errors *)
 let string_of_typecheck_error = function
+| DivisionByZero (f,e) -> logfun f "Division by zero found in " ^ (string_of_expr e)
 | TypeError (f,e,t1,t2) -> 
     logfun f
     "expression " ^ (string_of_expr e) ^ 
@@ -266,8 +269,8 @@ let rec typecheck_expr (f : ide) (edl : enum_decl list) vdl = function
 
   | Div(e1,e2) ->
     (match (typecheck_expr f edl vdl e1,typecheck_expr f edl vdl e2) with
-     | Ok(IntConstET n1), Ok(IntConstET n2) -> if n2<>0 then Ok(IntConstET (n1 / n2)) else 
-      Error [TypeError (f,e2,IntConstET n2,IntET)]
+     | Ok(IntConstET _), Ok(IntConstET 0) -> Error [DivisionByZero (f,e2)]
+     | Ok(IntConstET n1), Ok(IntConstET n2) -> Ok(IntConstET (n1 / n2))
      | Ok(t1),Ok(t2) when subtype t1 UintET && subtype t2 UintET -> Ok(UintET)
      | Ok(t1),Ok(t2) when subtype t1 IntET && subtype t2 IntET -> Ok(IntET)
      | Ok(t1),_ when not (subtype t1 IntET) -> Error [TypeError (f,e1,t1,IntET)]

@@ -7,6 +7,18 @@ let test_typecheck (src: string) (exp : bool)=
     | Ok() -> exp
     | _ -> not exp  
 
+let%test "test_typecheck_div_by_0" = test_typecheck 
+"contract C {
+    function f() public { int x; x = 5 / 0; }
+}"
+false
+
+let%test "test_typecheck_div" = test_typecheck 
+"contract C {
+    function f() public { int x; x = 5 / 2; }
+}"
+true
+
 let%test "test_typecheck_0" = test_typecheck 
   "contract C0 { }"
   true
