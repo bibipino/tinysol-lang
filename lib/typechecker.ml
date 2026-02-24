@@ -75,6 +75,7 @@ exception EnumOptionNotFound of ide * ide * ide
 exception EnumDupName of ide
 exception EnumDupOption of ide * ide
 exception MapInLocalDecl of ide * ide
+exception FunctionMutabilityError of ide * fun_mutability_t
 
 let logfun f s = "(" ^ f ^ ")\t" ^ s 
 
@@ -95,6 +96,11 @@ let string_of_typecheck_error = function
 | EnumDupName x -> "enum " ^ x ^ " is declared multiple times"
 | EnumDupOption (x,o) -> "enum option " ^ o ^ " is declared multiple times in enum " ^ x
 | MapInLocalDecl (f,x) -> logfun f "mapping " ^ x ^ " not admitted in local declaration" 
+| FunctionMutabilityError (f,mut) -> logfun f ("function is declared as " ^ (match mut with 
+  | Payable -> "payable"
+  | NonPayable -> "non-payable"
+  | View -> "view"
+  | Pure -> "pure") ^ ", but here it is not allowed")
 | ex -> Printexc.to_string ex
 
 let exprtype_of_decltype = function
@@ -392,7 +398,7 @@ let typecheck_local_decls (f : ide) (vdl : local_var_decl list) = List.fold_left
   (Ok ())
   vdl
 
-let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) = function 
+let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) (fm : fun_mutability_t) = function (*TODO?*)
     | Skip -> Ok ()
 
     | Assign(x,e) -> 
@@ -418,17 +424,17 @@ let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) = f
           | res1,res2,res3 -> typeckeck_result_from_expr_result (res1 >>+ res2 >>+ res3))
 
     | Seq(c1,c2) -> 
-        typecheck_cmd f edl vdl c1
+        typecheck_cmd f edl vdl fm c1 
         >>
-        typecheck_cmd f edl vdl c2
+        typecheck_cmd f edl vdl fm c2
 
     | If(e,c1,c2) -> (match typecheck_expr f edl vdl e with
-          | Ok(BoolConstET true)  -> typecheck_cmd f edl vdl c1
-          | Ok(BoolConstET false) -> typecheck_cmd f edl vdl c2
+          | Ok(BoolConstET true)  -> typecheck_cmd f edl vdl fm c1
+          | Ok(BoolConstET false) -> typecheck_cmd f edl vdl fm c2
           | Ok(BoolET) -> 
-              typecheck_cmd f edl vdl c1
+              typecheck_cmd f edl vdl fm c1
               >>
-              typecheck_cmd f edl vdl c2
+              typecheck_cmd f edl vdl fm c2
           | Ok(te) -> Error [TypeError (f,e,te,BoolET)]
           | res -> typeckeck_result_from_expr_result res)
 
@@ -451,7 +457,7 @@ let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) = f
         typecheck_local_decls f lvdl
         >>
         let vdl' = push_local_decls vdl lvdl in
-        typecheck_cmd f edl vdl' c
+        typecheck_cmd f edl vdl' fm c
 
     | ExecBlock(_) -> assert(false) (* should not happen at static time *)
 
@@ -464,19 +470,19 @@ let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) = f
     | Return(_) -> failwith "TODO: Return"
 
 
-let typecheck_fun (edl : enum_decl list) (vdl : var_decl list) = function
-  | Constr (al,c,_) ->
+let typecheck_fun (edl : enum_decl list) (vdl : var_decl list) = function (*TODO?*)
+  | Constr (al,c,fm) ->
       no_dup_local_var_decls "constructor" al
       >>
       typecheck_local_decls "constructor" al
       >> 
-      typecheck_cmd "constructor" edl (merge_var_decls vdl al) c
-  | Proc (f,al,c,_,__,_) ->
+      typecheck_cmd "constructor" edl (merge_var_decls vdl al) fm c
+  | Proc (f,al,c,_,fm,_) ->
       no_dup_local_var_decls f al
       >> 
       typecheck_local_decls f al
       >>
-      typecheck_cmd f edl (merge_var_decls vdl al) c
+      typecheck_cmd f edl (merge_var_decls vdl al) fm c
 
 (* dup_first: finds the first duplicate in a list *)
 let rec dup_first (l : 'a list) : 'a option = match l with 
