@@ -278,7 +278,7 @@ let rec typecheck_expr (f : ide) (edl : enum_decl list) (fm : fun_mutability_t) 
      | err1,err2 -> err1 >>+ err2)
 
   | Div(e1,e2) ->
-    (match (typecheck_expr f edl vdl e1,typecheck_expr f edl vdl e2) with
+    (match (typecheck_expr f edl fm vdl e1,typecheck_expr f edl fm vdl e2) with
      | Ok(IntConstET _), Ok(IntConstET 0) -> Error [DivisionByZero (f,e2)]
      | Ok(IntConstET n1), Ok(IntConstET n2) -> Ok(IntConstET (n1 / n2))
      | Ok(t1),Ok(t2) when subtype t1 UintET && subtype t2 UintET -> Ok(UintET)
