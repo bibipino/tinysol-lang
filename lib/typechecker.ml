@@ -454,7 +454,6 @@ let rec typecheck_cmd (f : ide) (edl : enum_decl list) (vdl : all_var_decls) (fm
           | res -> typeckeck_result_from_expr_result res)
 
     | Send(ercv,eamt) -> 
-
       if fm <> Payable && fm <> NonPayable
          then Error [FunctionMutabilityError (f,fm)]
       else

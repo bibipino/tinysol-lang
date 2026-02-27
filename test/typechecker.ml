@@ -7,6 +7,115 @@ let test_typecheck (src: string) (exp : bool)=
     | Ok() -> exp
     | _ -> not exp  
 
+    
+let%test "test_typecheck_function_mutability_0" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public payable { 
+        x = x+1;
+    } 
+  }"
+  true
+
+let%test "test_typecheck_function_mutability_1" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public { 
+        x = x+1;
+    } 
+  }"
+  true
+
+let%test "test_typecheck_function_mutability_2" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public view { 
+        x = x+1;
+    } 
+  }"
+  false
+  
+let%test "test_typecheck_function_mutability_3" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public pure { 
+        x = x+1;
+    } 
+  }"
+  false
+  
+let%test "test_typecheck_function_mutability_4" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public payable { 
+        uint n;
+        n = x+1;
+    } 
+  }"
+  true
+    
+let%test "test_typecheck_function_mutability_5" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public { 
+        uint n;
+        n = x+1;
+    } 
+  }"
+  true
+    
+let%test "test_typecheck_function_mutability_6" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public view { 
+        uint n;
+        n = x+1;
+    } 
+  }"
+  true
+    
+let%test "test_typecheck_function_mutability_7" = test_typecheck 
+  "contract C {
+    uint x; 
+
+    function f() public pure { 
+        uint n;
+        n = x+1;
+    } 
+  }"
+  false
+
+let%test "test_typecheck_function_mutability_8" = test_typecheck 
+  "contract C {
+    address recipient;
+    address owner;
+    uint n;
+
+    function f(uint amt) public payable { 
+        payable(recipient).transfer(amt);
+    } 
+  }"
+  true
+    
+let%test "test_typecheck_function_mutability_9" = test_typecheck 
+  "contract C {
+    address recipient;
+    address owner;
+    uint n;
+
+    function f(uint amt) public pure { 
+        recipient.transfer(amt);
+    } 
+  }"
+  false
+
 let%test "test_typecheck_0" = test_typecheck 
   "contract C0 { }"
   true
@@ -585,4 +694,3 @@ let%test "test_typecheck_enum_5" = test_typecheck
 let%test "test_typecheck_enum_6" = test_typecheck
   "contract C { enum E1 {A1,B1} enum E2 {A2,B2} enum E1 {A1,B1} E1 s; function f() public { s = E1.A1; } }"
   false
-
